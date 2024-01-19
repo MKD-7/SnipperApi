@@ -1,0 +1,6 @@
+@SnipperAPI_HostAddress = http://localhost:5029
+
+GET {{SnipperAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
