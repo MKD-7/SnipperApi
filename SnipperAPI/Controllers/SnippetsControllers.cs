@@ -45,9 +45,19 @@ namespace SnippetApi.Controllers
             return Ok(snippet);
         }
 
-        //TEST CHANGE
         //create endpoint for all snippets 
 
+        [HttpGet("snippets")]
+        public ActionResult<IEnumerable<Snippet>> GetAllSnippets()
+        {
+            // Assuming Snippets is a list of Snippet objects in your data store
+            if (Snippets.Count == 0)
+            {
+                return NotFound("No snippets found.");
+            }
+
+            return Ok(Snippets);
+        }
 
 
         // retrive by query 
@@ -72,6 +82,8 @@ namespace SnippetApi.Controllers
             // Return the matching snippets
             return Ok(matchingSnippets);
         }
+
     }
 }
+
 
