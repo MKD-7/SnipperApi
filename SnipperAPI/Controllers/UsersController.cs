@@ -15,8 +15,6 @@ public class SnippetsController : ControllerBase
         _signInManager = signInManager;
     }
 
-    // Existing actions...
-
     // New action for user registration
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterModel model)

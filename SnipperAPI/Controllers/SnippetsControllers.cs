@@ -40,7 +40,7 @@ namespace SnippetApi.Controllers
             {
                 return NotFound("Snippet not found");
             }
-
+            
             // Return the snippet
             return Ok(snippet);
         }
