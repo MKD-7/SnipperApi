@@ -14,6 +14,13 @@ namespace SnippetApi.Controllers
     {
         private static readonly List<Snippet> Snippets = new List<Snippet>();
 
+        private readonly UserManager<IdentityUser> _userManager;
+
+        public SnippetsController(UserManager<IdentityUser> userManager)
+        {
+            _userManager = userManager;
+        }
+
         // POST api/snippets
         /*[HttpPost]
         public ActionResult<Snippet> CreateSnippet([FromBody] SnippetRequest snippetRequest)
@@ -41,18 +48,13 @@ namespace SnippetApi.Controllers
         {
             if (ModelState.IsValid)
             {
-                var currentUser = _userManager.GetUserAsync(User).Result;
+               // var currentUser = _userManager.GetUserAsync(User).Result;
 
                 // Encrypt the content before saving it
                 var encryptedContent = EncryptionHelper.Encrypt(snippetRequest.Content);
 
-                var newSnippet = new Snippet
-                {
-                    Id = Guid.NewGuid(),
-                    Title = snippetRequest.Title,
-                    Content = encryptedContent, // Save the encrypted content
-                    CreatedAt = DateTime.UtcNow
-                };
+                var newSnippet = new Snippet(Id: Guid.NewGuid(), Title: snippetRequest.Title, Content: encryptedContent, CreatedAt: DateTime.UtcNow);
+                
 
                 Snippets.Add(newSnippet);
 
@@ -61,7 +63,7 @@ namespace SnippetApi.Controllers
 
             return BadRequest("Invalid snippet data.");
         }
-    }
+    
 
 
     //GET api/snippets/{id}
