@@ -1,2 +1,2 @@
 ﻿
-public record SnippetRequest(string Lang, string Content);
+public record SnippetRequest(string Lang,string Title, string Content);

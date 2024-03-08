@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SnipperAPI.Models;
 using System.Threading.Tasks;
 
 [ApiController]

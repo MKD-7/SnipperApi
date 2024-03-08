@@ -1,4 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using SnipperAPI.interfaces;
+
 
 namespace SnippetApi.Controllers
 {
@@ -6,10 +13,20 @@ namespace SnippetApi.Controllers
     [Route("[controller]")]
     public class SnippetsController : ControllerBase
     {
-        private static readonly List<Snippet> Snippets = new List<Snippet>();
+        private static readonly List<EncryptedSnippet> Snippets = new List<EncryptedSnippet>();
+
+
+        private readonly IEncrypt _encryptionService;
+
+        public object EncryptionHelper { get; private set; }
+
+        public SnippetsController(IEncrypt encryptionService)
+        {
+            _encryptionService = encryptionService;
+        }
 
         // POST api/snippets
-        [HttpPost]
+        /*[HttpPost]
         public ActionResult<Snippet> CreateSnippet([FromBody] SnippetRequest snippetRequest)
         {
             // Validating incoming data
@@ -26,14 +43,39 @@ namespace SnippetApi.Controllers
 
             // Returning the created snippet with Created status - use abstraction / restfulAPI
             return CreatedAtAction(nameof(GetSnippet), new { id = newSnippet.Id }, newSnippet);
-        }
+        }*/
 
-        // GET api/snippets/{id}
-        [HttpGet("{id}")]
-        public ActionResult<Snippet> GetSnippet(Guid id)
+
+        [HttpPost("snippets")]
+        //[Authorize] // Requires authentication
+        public ActionResult<EncryptedSnippet> CreateSnippet([FromBody] SnippetRequest snippetRequest)
+        {
+            if (ModelState.IsValid)
+            {
+               // var currentUser = _userManager.GetUserAsync(User).Result;
+
+                // Encrypt the content before saving it
+                var encryptedContent =_encryptionService.Encrypt(snippetRequest.Content);
+
+                var newSnippet = new EncryptedSnippet(Id: Guid.NewGuid(), Title: snippetRequest.Title, Content: encryptedContent, CreatedAt: DateTime.UtcNow);
+                
+
+                Snippets.Add(newSnippet);
+
+                return CreatedAtAction(nameof(GetSnippet), new { id = newSnippet.Id }, newSnippet);
+            }
+
+            return BadRequest("Invalid snippet data.");
+        }
+    
+
+
+    //GET api/snippets/{id}
+    [HttpGet("{id}")]
+        public ActionResult<EncryptedSnippet> GetSnippet(Guid id)
         {
             // Find the snippet by Id
-            Snippet snippet = Snippets.Find(s => s.Id == id);
+            EncryptedSnippet snippet = Snippets.Find(s => s.Id == id);
 
             // Check if the snippet is found
             if (snippet == null)
@@ -47,7 +89,7 @@ namespace SnippetApi.Controllers
 
         //create endpoint for all snippets 
 
-        [HttpGet("snippets")]
+        /*[HttpGet("snippets")]
         public ActionResult<IEnumerable<Snippet>> GetAllSnippets()
         {
             // Assuming Snippets is a list of Snippet objects in your data store
@@ -57,12 +99,35 @@ namespace SnippetApi.Controllers
             }
 
             return Ok(Snippets);
+        }*/
+
+
+        [HttpGet("snippets")]
+        //[Authorize] // Requires authentication
+        public ActionResult<IEnumerable<EncryptedSnippet>> GetAllSnippets()
+        {
+            // Get the current user
+
+            //  list of Snippet objects in your data store
+            if (Snippets.Count == 0)
+            {
+                return NotFound("No snippets found.");
+            }
+
+            // Decrypt snippets before returning
+            var decryptedSnippets = Snippets.Select(snippet =>
+                new DecryptedSnippet(snippet.Id, snippet.Title,_encryptionService.Decrypt(snippet.Content), snippet.CreatedAt)
+            );
+
+            return Ok(decryptedSnippets);
         }
+
+
 
 
         // retrive by query 
         [HttpGet("snippets/{lang}")]
-        public ActionResult<IEnumerable<Snippet>> GetSnippetsByLang(string lang)
+        public ActionResult<IEnumerable<EncryptedSnippet>> GetSnippetsByLang(string lang, EncryptedSnippet s)
         {
             // Validate the input
             if (string.IsNullOrEmpty(lang))
@@ -71,7 +136,7 @@ namespace SnippetApi.Controllers
             }
 
             // Find snippets that match the specified language
-            List<Snippet> matchingSnippets = Snippets.FindAll(s => s.Lang.Equals(lang, StringComparison.OrdinalIgnoreCase));
+            List<EncryptedSnippet> matchingSnippets = Snippets.FindAll(s => s.Lang.Equals(lang, StringComparison.OrdinalIgnoreCase));
 
             // Check if any snippets are found
             if (matchingSnippets.Count == 0)
