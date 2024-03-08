@@ -2,7 +2,7 @@
 {
     public interface IEncrypt
     {
-        string Decrypt(string content);
-        string Encrypt(string content);
+        string Decrypt(byte[] content);
+        byte[] Encrypt(string content);
     }
 }
