@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using SnipperAPI.interfaces;
 
 
 namespace SnippetApi.Controllers
@@ -14,11 +15,14 @@ namespace SnippetApi.Controllers
     {
         private static readonly List<Snippet> Snippets = new List<Snippet>();
 
-        private readonly UserManager<IdentityUser> _userManager;
 
-        public SnippetsController(UserManager<IdentityUser> userManager)
+        private readonly IEncrypt _encryptionService;
+
+        public object EncryptionHelper { get; private set; }
+
+        public SnippetsController(IEncrypt encryptionService)
         {
-            _userManager = userManager;
+            _encryptionService = encryptionService;
         }
 
         // POST api/snippets
@@ -43,7 +47,7 @@ namespace SnippetApi.Controllers
 
 
         [HttpPost("snippets")]
-        [Authorize] // Requires authentication
+        //[Authorize] // Requires authentication
         public ActionResult<Snippet> CreateSnippet([FromBody] SnippetRequest snippetRequest)
         {
             if (ModelState.IsValid)
@@ -51,7 +55,7 @@ namespace SnippetApi.Controllers
                // var currentUser = _userManager.GetUserAsync(User).Result;
 
                 // Encrypt the content before saving it
-                var encryptedContent = EncryptionHelper.Encrypt(snippetRequest.Content);
+                var encryptedContent =_encryptionService.Encrypt(snippetRequest.Content);
 
                 var newSnippet = new Snippet(Id: Guid.NewGuid(), Title: snippetRequest.Title, Content: encryptedContent, CreatedAt: DateTime.UtcNow);
                 
@@ -99,11 +103,10 @@ namespace SnippetApi.Controllers
 
 
         [HttpGet("snippets")]
-        [Authorize] // Requires authentication
+        //[Authorize] // Requires authentication
         public ActionResult<IEnumerable<Snippet>> GetAllSnippets()
         {
             // Get the current user
-            var currentUser = _userManager.GetUserAsync(User).Result;
 
             //  list of Snippet objects in your data store
             if (Snippets.Count == 0)
@@ -113,13 +116,7 @@ namespace SnippetApi.Controllers
 
             // Decrypt snippets before returning
             var decryptedSnippets = Snippets.Select(snippet =>
-                new Snippet
-                {
-                    Id = snippet.Id,
-                    Title = snippet.Title,
-                    Content = EncryptionHelper.Decrypt(snippet.Content), // Decrypt the content
-                    CreatedAt = snippet.CreatedAt
-                }
+                new Snippet(snippet.Id, snippet.Title,_encryptionService.Decrypt(snippet.Content), snippet.CreatedAt)
             );
 
             return Ok(decryptedSnippets);
@@ -130,7 +127,7 @@ namespace SnippetApi.Controllers
 
         // retrive by query 
         [HttpGet("snippets/{lang}")]
-        public ActionResult<IEnumerable<Snippet>> GetSnippetsByLang(string lang)
+        public ActionResult<IEnumerable<Snippet>> GetSnippetsByLang(string lang, Snippet s)
         {
             // Validate the input
             if (string.IsNullOrEmpty(lang))
